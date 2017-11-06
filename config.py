@@ -6,5 +6,5 @@ ftp_key = ''
 remote_directory = ''
 local_directory = ''
 
-remove_files_after_download=False
+remove_files_after_download = False
 
