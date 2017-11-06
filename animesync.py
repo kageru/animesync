@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 import time
 
+from termcolor import colored
 import config
 import pysftp
+import sys
 import os
 import re
 
@@ -11,20 +13,29 @@ import re
 filepattern = re.compile(r'(\[(?P<tag>.*)\])?\s?(?P<title>.*?)\s?[-–—]\s?(?P<episode>\d+).*\.(mkv|mp4)')
 
 
-def sync():
+def sync() -> None:
     with pysftp.Connection(host=config.ftp_host, username=config.ftp_user, private_key=config.ftp_key) as conn:
         with conn.cd(config.remote_directory):
             files = get_remote_filelist(conn)
+            if len(files) == 0:
+                print(colored('[INFO]', 'magenta'), end=' ')
+                print(f'No files in remote directory. Exiting.')
+                sys.exit(0)
             for file in files:
                 parsed = parse_filename(file)
                 if not local_file_exists(parsed):
                     download_file(conn, parsed)
                 else:
+                    print(colored('[INFO]', 'magenta'), end=' ')
                     print(f'"{file}" already exists on local system. Skipping.')
                 if config.remove_files_after_download:
+                    print(colored('[INFO]', 'magenta'), end=' ')
                     print(f'Removing "{file}" from remote server')
                     conn.remove(file)
+                print()
         conn.close()
+    print(colored('[SUCCESS]', 'green'), end=' ')
+    print(f'All files were synced successfully.')
 
 
 def get_remote_filelist(conn: pysftp.Connection) -> list:
@@ -48,6 +59,7 @@ def download_file(conn: pysftp.Connection, file) -> None:
     conn.get(file.string, os.path.join(target, file.string))
     filesize = os.path.getsize(os.path.join(target, file.string))
     time_elapsed = time.time() - start
+    print(colored('[SUCCESS]', 'green'), end=' ')
     print(
         f'Finished downloading "{file.string}" after {round(time_elapsed)} seconds. ({round(filesize/time_elapsed)} bytes per second)')
 
