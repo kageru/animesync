@@ -21,6 +21,11 @@ def sync() -> None:
                 print(colored('[INFO]', 'magenta'), end=' ')
                 print(f'No files in remote directory. Exiting.')
                 sys.exit(0)
+
+            print(colored('[INFO]', 'magenta'), end=' ')
+            print('The following files will be synced:')
+            print('    ' + '\n    '.join(files))
+            print()
             for file in files:
                 parsed = parse_filename(file)
                 if not local_file_exists(parsed):
@@ -61,7 +66,7 @@ def download_file(conn: pysftp.Connection, file) -> None:
     time_elapsed = time.time() - start
     print(colored('[SUCCESS]', 'green'), end=' ')
     print(
-        f'Finished downloading "{file.string}" after {round(time_elapsed)} seconds. ({round(filesize/time_elapsed)} bytes per second)')
+        f'Finished downloading "{file.string}" after {round(time_elapsed)} seconds. ({round(filesize/(time_elapsed*10e5), 2)} MB/s)')
 
 
 if __name__ == '__main__':
