@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import time
 
-import config2
+import config
 import pysftp
 import os
 import re
@@ -12,18 +12,17 @@ filepattern = re.compile(r'(\[(?P<tag>.*)\])?\s?(?P<title>.*?)\s?[-–—]\s?(?P
 
 
 def sync():
-    with pysftp.Connection(host=config2.ftp_host, username=config2.ftp_user, private_key=config2.ftp_key) as conn:
-        with conn.cd(config2.remote_directory):
+    with pysftp.Connection(host=config.ftp_host, username=config.ftp_user, private_key=config.ftp_key) as conn:
+        with conn.cd(config.remote_directory):
             files = get_remote_filelist(conn)
             for file in files:
-                print(file)
-                parsed = parse_filename(str(file))
+                parsed = parse_filename(file)
                 if not local_file_exists(parsed):
                     download_file(conn, parsed)
                 else:
-                    print(f'{file} already exists on local system. Skipping.')
-                if config2.remove_files_after_download:
-                    print(f'Removing {file} from remote server')
+                    print(f'"{file}" already exists on local system. Skipping.')
+                if config.remove_files_after_download:
+                    print(f'Removing "{file}" from remote server')
                     conn.remove(file)
         conn.close()
 
@@ -37,20 +36,20 @@ def parse_filename(filename: str):
 
 
 def local_file_exists(file) -> bool:
-    return os.path.isfile(os.path.join(config2.local_directory, file.group('title'), file.string))
+    return os.path.isfile(os.path.join(config.local_directory, file.group('title'), file.string))
 
 
 def download_file(conn: pysftp.Connection, file) -> None:
-    print(type(file))
-    target = os.path.join(config2.local_directory, file.group('title'))
+    target = os.path.join(config.local_directory, file.group('title'))
     if not os.path.exists(target):
         os.mkdir(target)
-    print(f'Downloading {file.string} into {target}')
+    print(f'Downloading "{file.string}" into "{target}"')
     start = time.time()
-    conn.get(file.string, target)
+    conn.get(file.string, os.path.join(target, file.string))
     filesize = os.path.getsize(os.path.join(target, file.string))
     time_elapsed = time.time() - start
-    print(f'Finished downloading {file.string} after {round(time_elapsed)} seconds. ({filesize/time_elapsed} bytes per second)')
+    print(
+        f'Finished downloading "{file.string}" after {round(time_elapsed)} seconds. ({round(filesize/time_elapsed)} bytes per second)')
 
 
 if __name__ == '__main__':
